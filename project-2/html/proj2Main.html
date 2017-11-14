@@ -1,0 +1,891 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>proj2Main</title><meta name="generator" content="MATLAB 9.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-11-13"><meta name="DC.source" content="proj2Main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">Chebyshev I</a></li><li><a href="#2">Chebyshev II</a></li><li><a href="#3">Kaiser</a></li><li><a href="#4">Parks-McClellan</a></li><li><a href="#5">Butterworth</a></li><li><a href="#6">Elliptical</a></li></ul></div><h2 id="1">Chebyshev I</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, bleh] = cheb1ord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = cheby1(order, passbandRipple, passbandEdge);
+
+genFilter = dfilt.df1(b, a);
+c = cost(genFilter);
+numberOfOperations = c.nmult
+
+[magResponseLin, genFreq] = freqz(b, a);
+grdResponse = grpdelay(b, a);
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title(<span class="string">'Chebyshev I Magnitude (in dB)'</span>)
+ylabel(<span class="string">'Magnitude (dB)'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title(<span class="string">'Chebyshev I Magnitude (in Linear)'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title(<span class="string">'Chebyshev I Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+
+figure
+subplot(2,1,1); zplane(b, a); title(<span class="string">'Chebyshev I Pole Zero Plot'</span>);
+
+impulseResponse = filter(b, a, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title(<span class="string">'Chebyshev I Impulse Response'</span>);
+
+<span class="comment">%fvtool(b,a); %verification that filter works</span>
+</pre><pre class="codeoutput">
+order =
+
+    12
+
+
+numberOfOperations =
+
+    25
+
+</pre><img vspace="5" hspace="5" src="proj2Main_01.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_02.png" style="width:560px;height:420px;" alt=""> <h2 id="2">Chebyshev II</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, bleh] = cheb2ord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = cheby2(order, stopbandRipple, stopbandEdge);
+
+genFilter = dfilt.df1(b, a);
+c = cost(genFilter);
+numberOfOperations = c.nmult
+
+[magResponseLin, genFreq] = freqz(b, a);
+grdResponse = grpdelay(b, a);
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title(<span class="string">'Chebyshev II Magnitude (in dB)'</span>)
+ylabel(<span class="string">'Magnitude (dB)'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title(<span class="string">'Chebyshev II Magnitude (in Linear)'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title(<span class="string">'Chebyshev II Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+
+figure
+subplot(2,1,1); zplane(b, a); title(<span class="string">'Chebyshev II Pole Zero Plot'</span>);
+
+impulseResponse = filter(b, a, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title(<span class="string">'Chebyshev II Impulse Response'</span>);
+
+<span class="comment">%fvtool(b,a); %verification that filter works</span>
+</pre><pre class="codeoutput">
+order =
+
+    12
+
+
+numberOfOperations =
+
+    25
+
+</pre><img vspace="5" hspace="5" src="proj2Main_03.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_04.png" style="width:560px;height:420px;" alt=""> <h2 id="3">Kaiser</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+specifiedFrequencyEdges = [2500 4000]
+desiredAmplitude = [1 0];
+desiredRipple = [(10^(passbandRipple/20)-1)/(10^(passbandRipple/20)+1) 10^(-stopbandRipple/20)];
+
+[order, genFrequencyEdges, beta, magType] = kaiserord(specifiedFrequencyEdges, desiredAmplitude, desiredRipple, fs);
+
+order
+
+b = fir1(order, genFrequencyEdges,magType,kaiser(order+1,beta),<span class="string">'noscale'</span>);
+
+[magResponseLin, genFreq] = freqz(b, 1);
+grdResponse = grpdelay(b, 1);
+
+genFilter = dfilt.df1(b, 1);
+c = cost(genFilter);
+numberOfOperations = c.nmult
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title(<span class="string">'Kaiser Magnitude (in dB)'</span>)
+ylabel(<span class="string">'Magnitude (dB)'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title(<span class="string">'Kaiser Magnitude (in Linear)'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title(<span class="string">'Kaiser Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+
+figure
+subplot(2,1,1); zplane(b, 1); title(<span class="string">'Kaiser Pole Zero Plot'</span>);
+
+impulseResponse = filter(b, 1, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title(<span class="string">'Kaiser Impulse Response'</span>);
+
+<span class="comment">%fvtool(b,1); %verification that filter works</span>
+</pre><pre class="codeoutput">
+specifiedFrequencyEdges =
+
+        2500        4000
+
+
+order =
+
+   179
+
+
+numberOfOperations =
+
+   180
+
+</pre><img vspace="5" hspace="5" src="proj2Main_05.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_06.png" style="width:560px;height:420px;" alt=""> <h2 id="4">Parks-McClellan</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+specifiedFrequencyEdges = [2500 4000]
+desiredAmplitude = [1 0];
+desiredRipple = [(10^(passbandRipple/20)-1)/(10^(passbandRipple/20)+1) 10^(-stopbandRipple/20)];
+
+[order, genFrequencyEdges, genAmplitudes, weights] = firpmord(specifiedFrequencyEdges, desiredAmplitude, desiredRipple, fs);
+
+order
+
+
+b = firpm(order, genFrequencyEdges, genAmplitudes, weights);
+
+[magResponseLin, genFreq] = freqz(b, 1);
+grdResponse = grpdelay(b, 1);
+
+genFilter = dfilt.df1(b, 1);
+c = cost(genFilter);
+numberOfOperations = c.nmult
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title(<span class="string">'Parks-McClellan Magnitude (in dB)'</span>)
+ylabel(<span class="string">'Magnitude (dB)'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title(<span class="string">'Parks-McClellan Magnitude (in Linear)'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title(<span class="string">'Parks-McClellan Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+
+figure
+subplot(2,1,1); zplane(b, 1); title(<span class="string">'Parks-McClellan Pole Zero Plot'</span>);
+
+impulseResponse = filter(b, 1, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title(<span class="string">'Parks-McClellan Impulse Response'</span>);
+
+<span class="comment">%fvtool(b,1); %verification that filter works</span>
+</pre><pre class="codeoutput">
+specifiedFrequencyEdges =
+
+        2500        4000
+
+
+order =
+
+    75
+
+
+numberOfOperations =
+
+    76
+
+</pre><img vspace="5" hspace="5" src="proj2Main_07.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_08.png" style="width:560px;height:420px;" alt=""> <h2 id="5">Butterworth</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, cutoffFrequencies] = buttord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = butter(order, cutoffFrequencies);
+DF1 = dfilt.df1(b, a);
+c1 = cost(DF1);
+numberOfOperationsDF1 = c1.nmult
+
+DF2 = dfilt.df2(b, a);
+c2 = cost(DF2);
+numberOfOperationsDF2 = c2.nmult
+
+[z,p,k] = butter(order, cutoffFrequencies);
+sections = zp2sos(z, p);
+DF2SOS = dfilt.df2sos(sections);
+c3 = cost(DF2SOS);
+numberOfOperationsDF2SOS = c3.nmult
+
+DF2SOST = dfilt.df2tsos(sections);
+c4 = cost(DF2SOST);
+numberOfOperationsDF2SOST = c4.nmult
+
+[DF1Mag, genFreqDF1] = freqz(DF1);
+normalizedFreq = genFreqDF1/pi;
+[DF2Mag, genFreqDF2] = freqz(DF2);
+[DF2SOSMag, genFreqDF2SOS] = freqz(DF2SOS);
+[DF2SOSTMag, genFreqDF2SOST] = freqz(DF2SOST);
+
+DF1GrD = grpdelay(DF1, genFreqDF1);
+DF2GrD = grpdelay(DF2, genFreqDF1);
+DF2SOSGrD = grpdelay(DF2SOS, genFreqDF1);
+DF2SOSTGrD = grpdelay(DF2SOST, genFreqDF1);
+
+figure
+subplot(2,1,1); plot(normalizedFreq,abs(DF1Mag),normalizedFreq,abs(DF2Mag),normalizedFreq,abs(DF2SOSMag),normalizedFreq,abs(DF2SOSTMag)); title(<span class="string">'Butterworth Magnitude'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+legend(<span class="string">'Direct Form I'</span>,<span class="string">'Direct Form II'</span>,<span class="string">'Direct Form II SOS'</span>,<span class="string">'Direct Form II SOS Transpose'</span>);
+subplot(2,1,2); plot(normalizedFreq,DF1GrD,normalizedFreq,DF2GrD,normalizedFreq,DF2SOSGrD,normalizedFreq,DF2SOSTGrD); title(<span class="string">'Butterworth Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+legend(<span class="string">'Direct Form I'</span>,<span class="string">'Direct Form II'</span>,<span class="string">'Direct Form II SOS'</span>,<span class="string">'Direct Form II SOS Transpose'</span>);
+
+[zDF1, pDF1, kDF1] = DF1.zpk;
+[zDF2, pDF2, kDF2] = DF2.zpk;
+[zDF2SOS, pDF2SOS, kDF2SOS] = DF2SOS.zpk;
+[zDF2SOST, pDF2SOST, kDF2SOST] = DF2SOST.zpk;
+
+figure
+subplot(2,2,1); zplane(zDF1, pDF1); title(<span class="string">'Butterworth Direct Form I'</span>);
+subplot(2,2,2); zplane(zDF2, pDF2); title(<span class="string">'Butterworth Direct Form II'</span>);
+subplot(2,2,3); zplane(zDF2SOS, pDF2SOS); title(<span class="string">'Butterworth Direct Form II SOS'</span>);
+subplot(2,2,4); zplane(zDF2SOST, pDF2SOST); title(<span class="string">'Butterworth Direct Form II SOS Transpose'</span>);
+
+<span class="comment">%fvtool(DF1); %verification that filter works</span>
+<span class="comment">%fvtool(DF2); %verification that filter works</span>
+<span class="comment">%fvtool(DF2SOS); %verification that filter works</span>
+<span class="comment">%fvtool(DF2SOST); %verification that filter works</span>
+</pre><pre class="codeoutput">
+order =
+
+    24
+
+
+numberOfOperationsDF1 =
+
+    49
+
+
+numberOfOperationsDF2 =
+
+    49
+
+
+numberOfOperationsDF2SOS =
+
+    36
+
+
+numberOfOperationsDF2SOST =
+
+    36
+
+</pre><img vspace="5" hspace="5" src="proj2Main_09.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_10.png" style="width:560px;height:420px;" alt=""> <h2 id="6">Elliptical</h2><pre class="codeinput">clear
+
+<span class="comment">% Filter Specs specified in FIR format</span>
+fs = 44100;
+passbandEdge = 2500/fs; <span class="comment">% normalized for easy input</span>
+stopbandEdge = 4000/fs; <span class="comment">% normalized for easy input</span>
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+<span class="comment">% Filter Specs specified for IIR Filter design</span>
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, cutoffFrequencies] = ellipord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = ellip(order, passbandRipple, stopbandRipple, passbandEdge);
+DF1 = dfilt.df1(b, a);
+c1 = cost(DF1);
+numberOfOperationsDF1 = c1.nmult
+
+DF2 = dfilt.df2(b, a);
+c2 = cost(DF2);
+numberOfOperationsDF2 = c2.nmult
+
+[z,p,k] = ellip(order, passbandRipple, stopbandRipple, cutoffFrequencies);
+sections = zp2sos(z, p);
+DF2SOS = dfilt.df2sos(sections);
+c3 = cost(DF2SOS);
+numberOfOperationsDF2SOS = c3.nmult
+
+DF2SOST = dfilt.df2tsos(sections);
+c4 = cost(DF2SOST);
+numberOfOperationsDF2SOST = c4.nmult
+
+[DF1Mag, genFreqDF1] = freqz(DF1);
+normalizedFreq = genFreqDF1/pi;
+[DF2Mag, genFreqDF2] = freqz(DF2);
+[DF2SOSMag, genFreqDF2SOS] = freqz(DF2SOS);
+[DF2SOSTMag, genFreqDF2SOST] = freqz(DF2SOST);
+
+DF1GrD = grpdelay(DF1, genFreqDF1);
+DF2GrD = grpdelay(DF2, genFreqDF1);
+DF2SOSGrD = grpdelay(DF2SOS, genFreqDF1);
+DF2SOSTGrD = grpdelay(DF2SOST, genFreqDF1);
+
+figure
+subplot(2,1,1); plot(normalizedFreq,abs(DF1Mag),normalizedFreq,abs(DF2Mag),normalizedFreq,abs(DF2SOSMag),normalizedFreq,abs(DF2SOSTMag)); title(<span class="string">'Elliptical Magnitude'</span>)
+ylabel(<span class="string">'Magnitude'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+legend(<span class="string">'Direct Form I'</span>,<span class="string">'Direct Form II'</span>,<span class="string">'Direct Form II SOS'</span>,<span class="string">'Direct Form II SOS Transpose'</span>);
+subplot(2,1,2); plot(normalizedFreq,DF1GrD,normalizedFreq,DF2GrD,normalizedFreq,DF2SOSGrD,normalizedFreq,DF2SOSTGrD); title(<span class="string">'Elliptical Group Delay'</span>)
+ylabel(<span class="string">'Delay'</span>)
+xlabel(<span class="string">'Normalized Frequency (\times\pi rad/sample)'</span>);
+legend(<span class="string">'Direct Form I'</span>,<span class="string">'Direct Form II'</span>,<span class="string">'Direct Form II SOS'</span>,<span class="string">'Direct Form II SOS Transpose'</span>);
+
+[zDF1, pDF1, kDF1] = DF1.zpk;
+[zDF2, pDF2, kDF2] = DF2.zpk;
+[zDF2SOS, pDF2SOS, kDF2SOS] = DF2SOS.zpk;
+[zDF2SOST, pDF2SOST, kDF2SOST] = DF2SOST.zpk;
+
+figure
+subplot(2,2,1); zplane(zDF1, pDF1); title(<span class="string">'Elliptical Direct Form I'</span>);
+subplot(2,2,2); zplane(zDF2, pDF2); title(<span class="string">'Elliptical Direct Form II'</span>);
+subplot(2,2,3); zplane(zDF2SOS, pDF2SOS); title(<span class="string">'Elliptical Direct Form II SOS'</span>);
+subplot(2,2,4); zplane(zDF2SOST, pDF2SOST); title(<span class="string">'Elliptical Direct Form II SOS Transpose'</span>);
+
+<span class="comment">%fvtool(DF1); %verification that filter works</span>
+<span class="comment">%fvtool(DF2); %verification that filter works</span>
+<span class="comment">%fvtool(DF2SOS); %verification that filter works</span>
+<span class="comment">%fvtool(DF2SOST); %verification that filter works</span>
+</pre><pre class="codeoutput">
+order =
+
+     8
+
+
+numberOfOperationsDF1 =
+
+    17
+
+
+numberOfOperationsDF2 =
+
+    17
+
+
+numberOfOperationsDF2SOS =
+
+    16
+
+
+numberOfOperationsDF2SOST =
+
+    16
+
+</pre><img vspace="5" hspace="5" src="proj2Main_11.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="proj2Main_12.png" style="width:560px;height:420px;" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2016b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Chebyshev I
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, bleh] = cheb1ord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = cheby1(order, passbandRipple, passbandEdge);
+
+genFilter = dfilt.df1(b, a);
+c = cost(genFilter); 
+numberOfOperations = c.nmult
+
+[magResponseLin, genFreq] = freqz(b, a);
+grdResponse = grpdelay(b, a);
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title('Chebyshev I Magnitude (in dB)')
+ylabel('Magnitude (dB)')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title('Chebyshev I Magnitude (in Linear)')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title('Chebyshev I Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+
+figure
+subplot(2,1,1); zplane(b, a); title('Chebyshev I Pole Zero Plot');
+
+impulseResponse = filter(b, a, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title('Chebyshev I Impulse Response');
+
+%fvtool(b,a); %verification that filter works
+
+%% Chebyshev II
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, bleh] = cheb2ord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple);
+
+order
+
+[b, a] = cheby2(order, stopbandRipple, stopbandEdge);
+
+genFilter = dfilt.df1(b, a);
+c = cost(genFilter); 
+numberOfOperations = c.nmult
+
+[magResponseLin, genFreq] = freqz(b, a);
+grdResponse = grpdelay(b, a);
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title('Chebyshev II Magnitude (in dB)')
+ylabel('Magnitude (dB)')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title('Chebyshev II Magnitude (in Linear)')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title('Chebyshev II Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+
+figure
+subplot(2,1,1); zplane(b, a); title('Chebyshev II Pole Zero Plot');
+
+impulseResponse = filter(b, a, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title('Chebyshev II Impulse Response');
+
+%fvtool(b,a); %verification that filter works
+
+%% Kaiser
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+specifiedFrequencyEdges = [2500 4000]
+desiredAmplitude = [1 0];
+desiredRipple = [(10^(passbandRipple/20)-1)/(10^(passbandRipple/20)+1) 10^(-stopbandRipple/20)];
+
+[order, genFrequencyEdges, beta, magType] = kaiserord(specifiedFrequencyEdges, desiredAmplitude, desiredRipple, fs);
+
+order
+
+b = fir1(order, genFrequencyEdges,magType,kaiser(order+1,beta),'noscale');
+
+[magResponseLin, genFreq] = freqz(b, 1);
+grdResponse = grpdelay(b, 1);
+
+genFilter = dfilt.df1(b, 1);
+c = cost(genFilter); 
+numberOfOperations = c.nmult
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title('Kaiser Magnitude (in dB)')
+ylabel('Magnitude (dB)')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title('Kaiser Magnitude (in Linear)')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title('Kaiser Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+
+figure
+subplot(2,1,1); zplane(b, 1); title('Kaiser Pole Zero Plot');
+
+impulseResponse = filter(b, 1, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title('Kaiser Impulse Response');
+
+%fvtool(b,1); %verification that filter works
+
+%% Parks-McClellan
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+specifiedFrequencyEdges = [2500 4000]
+desiredAmplitude = [1 0];
+desiredRipple = [(10^(passbandRipple/20)-1)/(10^(passbandRipple/20)+1) 10^(-stopbandRipple/20)];
+
+[order, genFrequencyEdges, genAmplitudes, weights] = firpmord(specifiedFrequencyEdges, desiredAmplitude, desiredRipple, fs);
+
+order
+
+
+b = firpm(order, genFrequencyEdges, genAmplitudes, weights);
+
+[magResponseLin, genFreq] = freqz(b, 1);
+grdResponse = grpdelay(b, 1);
+
+genFilter = dfilt.df1(b, 1);
+c = cost(genFilter); 
+numberOfOperations = c.nmult
+
+normalizedFreq = genFreq/pi;
+
+magResponseLog = 20*log10(abs(magResponseLin));
+
+figure
+subplot(2,2,1); plot(normalizedFreq,magResponseLog); title('Parks-McClellan Magnitude (in dB)')
+ylabel('Magnitude (dB)')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,2); plot(normalizedFreq,abs(magResponseLin)); title('Parks-McClellan Magnitude (in Linear)')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+subplot(2,2,3); plot(normalizedFreq,grdResponse); title('Parks-McClellan Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+
+figure
+subplot(2,1,1); zplane(b, 1); title('Parks-McClellan Pole Zero Plot');
+
+impulseResponse = filter(b, 1, [1, zeros(1,99)]);
+subplot(2,1,2); stem(impulseResponse); title('Parks-McClellan Impulse Response');
+
+%fvtool(b,1); %verification that filter works
+
+%% Butterworth
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, cutoffFrequencies] = buttord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple); 
+
+order
+
+[b, a] = butter(order, cutoffFrequencies);
+DF1 = dfilt.df1(b, a);
+c1 = cost(DF1); 
+numberOfOperationsDF1 = c1.nmult
+
+DF2 = dfilt.df2(b, a);
+c2 = cost(DF2); 
+numberOfOperationsDF2 = c2.nmult
+
+[z,p,k] = butter(order, cutoffFrequencies);
+sections = zp2sos(z, p);
+DF2SOS = dfilt.df2sos(sections);
+c3 = cost(DF2SOS); 
+numberOfOperationsDF2SOS = c3.nmult
+
+DF2SOST = dfilt.df2tsos(sections);
+c4 = cost(DF2SOST); 
+numberOfOperationsDF2SOST = c4.nmult
+
+[DF1Mag, genFreqDF1] = freqz(DF1);
+normalizedFreq = genFreqDF1/pi;
+[DF2Mag, genFreqDF2] = freqz(DF2);
+[DF2SOSMag, genFreqDF2SOS] = freqz(DF2SOS);
+[DF2SOSTMag, genFreqDF2SOST] = freqz(DF2SOST);
+
+DF1GrD = grpdelay(DF1, genFreqDF1);
+DF2GrD = grpdelay(DF2, genFreqDF1);
+DF2SOSGrD = grpdelay(DF2SOS, genFreqDF1);
+DF2SOSTGrD = grpdelay(DF2SOST, genFreqDF1);
+
+figure
+subplot(2,1,1); plot(normalizedFreq,abs(DF1Mag),normalizedFreq,abs(DF2Mag),normalizedFreq,abs(DF2SOSMag),normalizedFreq,abs(DF2SOSTMag)); title('Butterworth Magnitude')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+legend('Direct Form I','Direct Form II','Direct Form II SOS','Direct Form II SOS Transpose');
+subplot(2,1,2); plot(normalizedFreq,DF1GrD,normalizedFreq,DF2GrD,normalizedFreq,DF2SOSGrD,normalizedFreq,DF2SOSTGrD); title('Butterworth Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+legend('Direct Form I','Direct Form II','Direct Form II SOS','Direct Form II SOS Transpose');
+
+[zDF1, pDF1, kDF1] = DF1.zpk;
+[zDF2, pDF2, kDF2] = DF2.zpk;
+[zDF2SOS, pDF2SOS, kDF2SOS] = DF2SOS.zpk;
+[zDF2SOST, pDF2SOST, kDF2SOST] = DF2SOST.zpk;
+
+figure
+subplot(2,2,1); zplane(zDF1, pDF1); title('Butterworth Direct Form I');
+subplot(2,2,2); zplane(zDF2, pDF2); title('Butterworth Direct Form II');
+subplot(2,2,3); zplane(zDF2SOS, pDF2SOS); title('Butterworth Direct Form II SOS');
+subplot(2,2,4); zplane(zDF2SOST, pDF2SOST); title('Butterworth Direct Form II SOS Transpose');
+
+%fvtool(DF1); %verification that filter works
+%fvtool(DF2); %verification that filter works
+%fvtool(DF2SOS); %verification that filter works
+%fvtool(DF2SOST); %verification that filter works
+
+%% Elliptical
+
+clear
+
+% Filter Specs specified in FIR format
+fs = 44100;
+passbandEdge = 2500/fs; % normalized for easy input
+stopbandEdge = 4000/fs; % normalized for easy input
+maxPassbandGain = 40;
+minPassbandGain = 37;
+maxStopbandGain = -55;
+
+% Filter Specs specified for IIR Filter design
+passbandRipple = maxPassbandGain - minPassbandGain;
+stopbandRipple = maxPassbandGain - maxStopbandGain;
+
+[order, cutoffFrequencies] = ellipord(passbandEdge, stopbandEdge, passbandRipple, stopbandRipple); 
+
+order
+
+[b, a] = ellip(order, passbandRipple, stopbandRipple, passbandEdge);
+DF1 = dfilt.df1(b, a);
+c1 = cost(DF1); 
+numberOfOperationsDF1 = c1.nmult
+
+DF2 = dfilt.df2(b, a);
+c2 = cost(DF2); 
+numberOfOperationsDF2 = c2.nmult
+
+[z,p,k] = ellip(order, passbandRipple, stopbandRipple, cutoffFrequencies);
+sections = zp2sos(z, p);
+DF2SOS = dfilt.df2sos(sections);
+c3 = cost(DF2SOS); 
+numberOfOperationsDF2SOS = c3.nmult
+
+DF2SOST = dfilt.df2tsos(sections);
+c4 = cost(DF2SOST); 
+numberOfOperationsDF2SOST = c4.nmult
+
+[DF1Mag, genFreqDF1] = freqz(DF1);
+normalizedFreq = genFreqDF1/pi;
+[DF2Mag, genFreqDF2] = freqz(DF2);
+[DF2SOSMag, genFreqDF2SOS] = freqz(DF2SOS);
+[DF2SOSTMag, genFreqDF2SOST] = freqz(DF2SOST);
+
+DF1GrD = grpdelay(DF1, genFreqDF1);
+DF2GrD = grpdelay(DF2, genFreqDF1);
+DF2SOSGrD = grpdelay(DF2SOS, genFreqDF1);
+DF2SOSTGrD = grpdelay(DF2SOST, genFreqDF1);
+
+figure
+subplot(2,1,1); plot(normalizedFreq,abs(DF1Mag),normalizedFreq,abs(DF2Mag),normalizedFreq,abs(DF2SOSMag),normalizedFreq,abs(DF2SOSTMag)); title('Elliptical Magnitude')
+ylabel('Magnitude')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+legend('Direct Form I','Direct Form II','Direct Form II SOS','Direct Form II SOS Transpose');
+subplot(2,1,2); plot(normalizedFreq,DF1GrD,normalizedFreq,DF2GrD,normalizedFreq,DF2SOSGrD,normalizedFreq,DF2SOSTGrD); title('Elliptical Group Delay')
+ylabel('Delay')
+xlabel('Normalized Frequency (\times\pi rad/sample)');
+legend('Direct Form I','Direct Form II','Direct Form II SOS','Direct Form II SOS Transpose');
+
+[zDF1, pDF1, kDF1] = DF1.zpk;
+[zDF2, pDF2, kDF2] = DF2.zpk;
+[zDF2SOS, pDF2SOS, kDF2SOS] = DF2SOS.zpk;
+[zDF2SOST, pDF2SOST, kDF2SOST] = DF2SOST.zpk;
+
+figure
+subplot(2,2,1); zplane(zDF1, pDF1); title('Elliptical Direct Form I');
+subplot(2,2,2); zplane(zDF2, pDF2); title('Elliptical Direct Form II');
+subplot(2,2,3); zplane(zDF2SOS, pDF2SOS); title('Elliptical Direct Form II SOS');
+subplot(2,2,4); zplane(zDF2SOST, pDF2SOST); title('Elliptical Direct Form II SOS Transpose');
+
+%fvtool(DF1); %verification that filter works
+%fvtool(DF2); %verification that filter works
+%fvtool(DF2SOS); %verification that filter works
+%fvtool(DF2SOST); %verification that filter works
+##### SOURCE END #####
+--></body></html>
